@@ -33,14 +33,10 @@
     flowLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
     self = [super initWithCollectionViewLayout:flowLayout];
     if (self) {
-        [self.collectionView setFrame:CGRectMake(-10, 0, self.view.bounds.size.width + 20, self.view.bounds.size.height + 1)];
-        [self.collectionView setPagingEnabled:YES];
-        [self.collectionView setShowsVerticalScrollIndicator:NO];
-        [self.collectionView setShowsHorizontalScrollIndicator:NO];
-        [self.collectionView registerClass:[SYImagePickerBrowserCell class] forCellWithReuseIdentifier:NSStringFromClass([SYImagePickerBrowserCell class])];
-        [self setAutomaticallyAdjustsScrollViewInsets:NO];
-        [self.view setClipsToBounds:YES];
-        [self setup];
+        [self setupNavigationItem];
+        [self setupToolbarItem];
+        [self setupCollectionView];
+        self.automaticallyAdjustsScrollViewInsets = NO;
     }
     return self;
 }
@@ -48,7 +44,7 @@
 - (instancetype)initWithAssetsArray:(NSArray *)assetsArray currentIndex:(NSInteger)currentIndex {
     self = [self init];
     if (self) {
-        _assetsArray = [[NSMutableArray alloc] initWithArray:assetsArray];
+        _assetsArray = [NSMutableArray arrayWithArray:assetsArray];
         _currentIndex = currentIndex;
     }
     return self;
@@ -66,23 +62,22 @@
 
 #pragma mark - Setup method
 
-- (void)setup {
-    [self.navigationItem setRightBarButtonItem:[[UIBarButtonItem alloc] initWithCustomView:self.selectButton]];
-    UIBarButtonItem *flexibleBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
-    [self setToolbarItems:@[flexibleBarButtonItem, self.doneButton]];
+- (void)setupNavigationItem {
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:self.selectButton];
 }
 
-- (void)reloadData {
-    NSUInteger numberOfAssets = self.assetsArray.count;
-    self.title = [NSString stringWithFormat:@"%@/%@", @(self.currentIndex + 1), @(numberOfAssets)];
-    if ([self.delegate respondsToSelector:@selector(browserViewController:selectedIndexOfAsset:)]) {
-        self.selectButton.selectIndex = [self.delegate browserViewController:self selectedIndexOfAsset:self.assetsArray[self.currentIndex]];
-    }
+- (void)setupToolbarItem {
+    UIBarButtonItem *flexibleBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
+    self.toolbarItems = @[flexibleBarButtonItem, self.doneButton];
+}
 
-    if ([self.delegate respondsToSelector:@selector(numberOfSelectedAssetsInBrowserViewController:)]) {
-        NSUInteger numberOfSelectedAssets = [self.delegate numberOfSelectedAssetsInBrowserViewController:self];
-        self.doneButton.enabled = numberOfSelectedAssets != 0;
-    }
+- (void)setupCollectionView {
+    self.collectionView.frame = CGRectMake(-10, 0, self.view.bounds.size.width + 20, self.view.bounds.size.height + 1);
+    self.collectionView.pagingEnabled = YES;
+    self.collectionView.clipsToBounds = YES;
+    self.collectionView.showsVerticalScrollIndicator= NO;
+    self.collectionView.showsHorizontalScrollIndicator= NO;
+    [self.collectionView registerClass:[SYImagePickerBrowserCell class] forCellWithReuseIdentifier:NSStringFromClass([SYImagePickerBrowserCell class])];
 }
 
 #pragma mark - ScrollView Delegate
@@ -114,6 +109,21 @@
     cell.asset = [self.assetsArray objectAtIndex:indexPath.row];
     cell.browserViewController = self;
     return cell;
+}
+
+#pragma mark - Reload method
+
+- (void)reloadData {
+    NSUInteger numberOfAssets = self.assetsArray.count;
+    self.title = [NSString stringWithFormat:@"%@/%@", @(self.currentIndex + 1), @(numberOfAssets)];
+    if ([self.delegate respondsToSelector:@selector(browserViewController:selectedIndexOfAsset:)]) {
+        self.selectButton.selectIndex = [self.delegate browserViewController:self selectedIndexOfAsset:self.assetsArray[self.currentIndex]];
+    }
+    
+    if ([self.delegate respondsToSelector:@selector(numberOfSelectedAssetsInBrowserViewController:)]) {
+        NSUInteger numberOfSelectedAssets = [self.delegate numberOfSelectedAssetsInBrowserViewController:self];
+        self.doneButton.enabled = numberOfSelectedAssets != 0;
+    }
 }
 
 #pragma mark - Event Response

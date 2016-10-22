@@ -65,10 +65,7 @@
 }
 
 - (void)setAsset:(ALAsset *)asset {
-    CGImageRef thumbnailImageRef = [asset thumbnail];
-    if (thumbnailImageRef) {
-        self.imageView.image = [UIImage imageWithCGImage:thumbnailImageRef];
-    }
+    self.imageView.image = asset.thumbnail?[UIImage imageWithCGImage:asset.thumbnail]:nil;
 }
 
 @end

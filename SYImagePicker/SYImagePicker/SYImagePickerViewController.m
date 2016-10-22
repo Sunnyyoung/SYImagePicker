@@ -41,9 +41,9 @@
 
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated {
     if ([viewController isKindOfClass:[SYImagePickerAssetsGroupViewController class]]) {
-        [viewController.navigationController setToolbarHidden:YES];
+        viewController.navigationController.toolbarHidden = YES;
     } else {
-        [viewController.navigationController setToolbarHidden:NO];
+        viewController.navigationController.toolbarHidden = NO;
     }
 }
 

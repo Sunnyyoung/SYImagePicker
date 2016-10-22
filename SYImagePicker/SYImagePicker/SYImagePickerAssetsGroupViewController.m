@@ -14,7 +14,7 @@
 @interface SYImagePickerAssetsGroupViewController ()
 
 @property (nonatomic, strong) ALAssetsLibrary *assetsLibrary;
-@property (nonatomic, copy) NSArray *assetsGroupArray;
+@property (nonatomic, strong) NSArray *assetsGroupArray;
 
 @end
 
@@ -25,19 +25,30 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        [self setup];
+        [self setupNavigationItem];
+        [self setupTableView];
     }
     return self;
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    __weak typeof(self) weakSelf = self;
+    [self loadAssetsGroupsWithTypes:@[@(ALAssetsGroupAll)] completion:^(NSArray *assetsGroups) {
+        weakSelf.assetsGroupArray = assetsGroups;
+        [weakSelf.tableView reloadData];
+    }];
 }
 
-- (void)setup {
-    [self setTitle:@"相册"];
-    [self.navigationItem setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStylePlain target:self action:@selector(cancelAction)]];
-    [self.tableView setTableFooterView:[[UIView alloc] init]];
+#pragma mark - Setup method
+
+- (void)setupNavigationItem {
+    self.title = @"相册";
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStylePlain target:self action:@selector(cancelAction)];
+}
+
+- (void)setupTableView {
+    self.tableView.tableFooterView = [[UIView alloc] init];
     [self.tableView registerClass:[SYImagePickerAssetsGroupCell class] forCellReuseIdentifier:AssetsGroupCell];
 }
 
@@ -72,8 +83,9 @@
 #pragma mark - Event Response
 
 - (void)cancelAction {
-    if ([((SYImagePickerViewController *)self.navigationController).imagePickerDelegate respondsToSelector:@selector(imagePickerViewControllerDidCancel:)]) {
-        [((SYImagePickerViewController *)self.navigationController).imagePickerDelegate imagePickerViewControllerDidCancel:(SYImagePickerViewController *)self.navigationController];
+    SYImagePickerViewController *imagePickerViewController = (SYImagePickerViewController *)self.navigationController;
+    if ([imagePickerViewController.imagePickerDelegate respondsToSelector:@selector(imagePickerViewControllerDidCancel:)]) {
+        [imagePickerViewController.imagePickerDelegate imagePickerViewControllerDidCancel:(SYImagePickerViewController *)self.navigationController];
     }
 }
 
@@ -83,7 +95,7 @@
     __block NSMutableArray *assetsGroups = [NSMutableArray array];
     __block NSUInteger numberOfFinishedTypes = 0;
     for (NSNumber *type in types) {
-        [self.assetsLibrary enumerateGroupsWithTypes:[type unsignedIntegerValue] usingBlock:^(ALAssetsGroup *assetsGroup, BOOL *stop) {
+        [self.assetsLibrary enumerateGroupsWithTypes:type.unsignedIntegerValue usingBlock:^(ALAssetsGroup *assetsGroup, BOOL *stop) {
             if (assetsGroup) {
                 // Filter the assets group
                 [assetsGroup setAssetsFilter:[ALAssetsFilter allPhotos]];
@@ -117,13 +129,9 @@
                 }
             }
         } failureBlock:^(NSError *error) {
-            if ([ALAssetsLibrary authorizationStatus] != ALAuthorizationStatusAuthorized) {
-                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"提示"
-                                                                    message:@"请打开口袋兼职的相册权限"
-                                                                   delegate:nil
-                                                          cancelButtonTitle:@"确定"
-                                                          otherButtonTitles:nil, nil];
-                [alertView show];
+            SYImagePickerViewController *imagePickerViewController = (SYImagePickerViewController *)self.navigationController;
+            if ([imagePickerViewController.imagePickerDelegate respondsToSelector:@selector(imagePickerViewController:didFailToLoadAssetsGroupsWithError:)]) {
+                [imagePickerViewController.imagePickerDelegate imagePickerViewController:imagePickerViewController didFailToLoadAssetsGroupsWithError:error];
             }
         }];
     }
@@ -136,17 +144,6 @@
         _assetsLibrary = [[ALAssetsLibrary alloc] init];
     }
     return _assetsLibrary;
-}
-
-- (NSArray *)assetsGroupArray {
-    if (_assetsGroupArray == nil) {
-        __weak typeof(self) weakSelf = self;
-        [self loadAssetsGroupsWithTypes:@[@(ALAssetsGroupAll)] completion:^(NSArray *assetsGroups) {
-            _assetsGroupArray = assetsGroups;
-            [weakSelf.tableView reloadData];
-        }];
-    }
-    return _assetsGroupArray;
 }
 
 @end

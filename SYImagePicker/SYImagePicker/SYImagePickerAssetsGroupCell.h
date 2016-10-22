@@ -13,6 +13,6 @@ static NSString * const AssetsGroupCell = @"AssetsGroupCell";
 
 @interface SYImagePickerAssetsGroupCell : UITableViewCell
 
-@property (nonatomic) ALAssetsGroup *assetsGroup;
+@property (nonatomic, strong) ALAssetsGroup *assetsGroup;
 
 @end

@@ -21,7 +21,7 @@
 
 #pragma mark - ImagePicker DataSource
 
-- (NSUInteger)maxSelectionForImagePickerViewController:(SYImagePickerViewController *)imagePickerViewController {
+- (NSUInteger)maximumSelectionForImagePickerViewController:(SYImagePickerViewController *)imagePickerViewController {
     return 2;
 }
 
@@ -31,8 +31,37 @@
     [imagePickerViewController dismissViewControllerAnimated:YES completion:nil];
 }
 
+- (void)imagePickerViewController:(SYImagePickerViewController *)imagePickerViewController didExceedMaximumSelection:(NSUInteger)maximumSelection {
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"提示"
+                                                        message:[NSString stringWithFormat:@"最多可以选择%@张", @(maximumSelection)]
+                                                       delegate:nil
+                                              cancelButtonTitle:@"确定"
+                                              otherButtonTitles:nil, nil];
+    [alertView show];
+}
+
 - (void)imagePickerViewControllerDidCancel:(SYImagePickerViewController *)imagePickerViewController {
     [imagePickerViewController dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (void)imagePickerViewController:(SYImagePickerViewController *)imagePickerViewController didFailToLoadAssetsGroupsWithError:(NSError *)error {
+    if ([ALAssetsLibrary authorizationStatus] != ALAuthorizationStatusAuthorized) {
+        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"提示"
+                                                            message:@"请打开口袋兼职的相册权限"
+                                                           delegate:nil
+                                                  cancelButtonTitle:@"确定"
+                                                  otherButtonTitles:nil, nil];
+        [alertView show];
+    }
+}
+
+- (void)imagePickerViewController:(SYImagePickerViewController *)imagePickerViewController didFailToLoadAssetsWithError:(NSError *)error {
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"提示"
+                                                        message:@"加载图片失败"
+                                                       delegate:nil
+                                              cancelButtonTitle:@"确定"
+                                              otherButtonTitles:nil, nil];
+    [alertView show];
 }
 
 - (IBAction)showAction:(id)sender {

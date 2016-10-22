@@ -14,12 +14,15 @@
 
 @interface SYImagePickerAssetsViewController () <UICollectionViewDelegateFlowLayout, SYImagePickerAssetsCellDelegate, SYImagePickerBrowserViewControllerDelegate>
 
+// UI Property
 @property (nonatomic, strong) UIBarButtonItem *previewBarButtonItem;
 @property (nonatomic, strong) UIBarButtonItem *doneBarButtonItem;
 
+// AL Property
 @property (nonatomic, strong) ALAssetsLibrary *assetsLibrary;
 @property (nonatomic, strong) ALAssetsGroup *assetsGroup;
 
+// Data Property
 @property (nonatomic, strong) NSMutableArray *assetsArray;
 @property (nonatomic, strong) NSMutableArray *selectedAssetsArray;
 
@@ -31,11 +34,13 @@
 
 - (instancetype)init {
     UICollectionViewFlowLayout *flowLayout = [[UICollectionViewFlowLayout alloc] init];
-    [flowLayout setMinimumInteritemSpacing:1.0];
-    [flowLayout setMinimumLineSpacing:1.0];
+    flowLayout.minimumLineSpacing = 1.0;
+    flowLayout.minimumInteritemSpacing = 1.0;
     self = [super initWithCollectionViewLayout:flowLayout];
     if (self) {
-        [self setup];
+        [self setupNavigationItem];
+        [self setupToolbarItem];
+        [self setupCollectionView];
     }
     return self;
 }
@@ -43,21 +48,25 @@
 - (instancetype)initWithTitle:(NSString *)title assetsGroupURL:(NSURL *)assetsGroupURL {
     self = [self init];
     if (self) {
-        [self setTitle:title];
+        self.title = title;
         [self loadAssetsWithAssetsGroupURL:assetsGroupURL];
     }
     return self;
 }
 
-- (void)viewDidLoad {
-    [super viewDidLoad];
+#pragma mark - Setup method
+
+- (void)setupNavigationItem {
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStylePlain target:self action:@selector(cancelAction)];
 }
 
-- (void)setup {
-    [self.navigationItem setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStylePlain target:self action:@selector(cancelAction)]];
+- (void)setupToolbarItem {
     UIBarButtonItem *flexibleBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
-    [self setToolbarItems:@[self.previewBarButtonItem, flexibleBarButtonItem, self.doneBarButtonItem]];
-    [self.collectionView setBackgroundColor:[UIColor whiteColor]];
+    self.toolbarItems = @[self.previewBarButtonItem, flexibleBarButtonItem, self.doneBarButtonItem];
+}
+
+- (void)setupCollectionView {
+    self.collectionView.backgroundColor = [UIColor whiteColor];
     [self.collectionView registerClass:[SYImagePickerAssetsCell class] forCellWithReuseIdentifier:AssetsCell];
 }
 
@@ -142,7 +151,8 @@
 }
 
 - (void)doneAction {
-    if ([((SYImagePickerViewController *)self.navigationController).imagePickerDelegate respondsToSelector:@selector(imagePickerViewController:didFinishSelectImages:thumbs:)]) {
+    SYImagePickerViewController *imagePickerViewController = (SYImagePickerViewController *)self.navigationController;
+    if ([imagePickerViewController.imagePickerDelegate respondsToSelector:@selector(imagePickerViewController:didFinishSelectImages:thumbs:)]) {
         NSMutableArray *imageArray = [NSMutableArray array];
         NSMutableArray *thumbArray = [NSMutableArray array];
         for (ALAsset *asset in self.selectedAssetsArray) {
@@ -153,13 +163,14 @@
                 [imageArray addObject:image];
             }
         }
-        [((SYImagePickerViewController *)self.navigationController).imagePickerDelegate imagePickerViewController:(SYImagePickerViewController *)self.navigationController didFinishSelectImages:imageArray thumbs:thumbArray];
+        [imagePickerViewController.imagePickerDelegate imagePickerViewController:imagePickerViewController didFinishSelectImages:imageArray thumbs:thumbArray];
     }
 }
 
 - (void)cancelAction {
-    if ([((SYImagePickerViewController *)self.navigationController).imagePickerDelegate respondsToSelector:@selector(imagePickerViewControllerDidCancel:)]) {
-        [((SYImagePickerViewController *)self.navigationController).imagePickerDelegate imagePickerViewControllerDidCancel:(SYImagePickerViewController *)self.navigationController];
+    SYImagePickerViewController *imagePickerViewController = (SYImagePickerViewController *)self.navigationController;
+    if ([imagePickerViewController.imagePickerDelegate respondsToSelector:@selector(imagePickerViewControllerDidCancel:)]) {
+        [imagePickerViewController.imagePickerDelegate imagePickerViewControllerDidCancel:imagePickerViewController];
     }
 }
 
@@ -186,8 +197,10 @@
             });
         }
     } failureBlock:^(NSError *error){
-        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"提示" message:@"加载图片失败" delegate:nil cancelButtonTitle:@"确定" otherButtonTitles:nil, nil];
-        [alertView show];
+        SYImagePickerViewController *imagePickerViewController = (SYImagePickerViewController *)self.navigationController;
+        if ([imagePickerViewController.imagePickerDelegate respondsToSelector:@selector(imagePickerViewController:didFailToLoadAssetsWithError:)]) {
+            [imagePickerViewController.imagePickerDelegate imagePickerViewController:imagePickerViewController didFailToLoadAssetsWithError:error];
+        }
     }];
 }
 
@@ -216,14 +229,15 @@
     if ([self isSelectedAsset:asset]) {
         return;
     }
-    SYImagePickerViewController *navigationController = (SYImagePickerViewController *)self.navigationController;
-    NSUInteger maxSelection = 0;
-    if ([navigationController.imagePickerDataSource respondsToSelector:@selector(maxSelectionForImagePickerViewController:)]) {
-        maxSelection = [navigationController.imagePickerDataSource maxSelectionForImagePickerViewController:navigationController];
+    SYImagePickerViewController *imagePickerViewController = (SYImagePickerViewController *)self.navigationController;
+    NSUInteger maximumSelection = 0;
+    if ([imagePickerViewController.imagePickerDataSource respondsToSelector:@selector(maximumSelectionForImagePickerViewController:)]) {
+        maximumSelection = [imagePickerViewController.imagePickerDataSource maximumSelectionForImagePickerViewController:imagePickerViewController];
     }
-    if (maxSelection > 0 && self.selectedAssetsArray.count >= maxSelection) {
-        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"提示" message:[NSString stringWithFormat:@"最多可以选择%@张图片", @(maxSelection)] delegate:nil cancelButtonTitle:@"确定" otherButtonTitles:nil, nil];
-        [alertView show];
+    if (maximumSelection > 0 && self.selectedAssetsArray.count >= maximumSelection) {
+        if ([imagePickerViewController.imagePickerDelegate respondsToSelector:@selector(imagePickerViewController:didExceedMaximumSelection:)]) {
+            [imagePickerViewController.imagePickerDelegate imagePickerViewController:imagePickerViewController didExceedMaximumSelection:maximumSelection];
+        }
     } else {
         [self.selectedAssetsArray addObject:asset];
         [self reloadData];

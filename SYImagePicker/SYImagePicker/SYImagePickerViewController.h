@@ -7,13 +7,14 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <AssetsLibrary/AssetsLibrary.h>
 
 @class SYImagePickerViewController;
 
 @protocol SYImagePickerBrowserViewControllerDataSource <NSObject>
 
 @optional
-- (NSUInteger)maxSelectionForImagePickerViewController:(SYImagePickerViewController *)imagePickerViewController;
+- (NSUInteger)maximumSelectionForImagePickerViewController:(SYImagePickerViewController *)imagePickerViewController;
 
 @end
 
@@ -21,6 +22,9 @@
 
 @required
 - (void)imagePickerViewController:(SYImagePickerViewController *)imagePickerViewController didFinishSelectImages:(NSArray *)images thumbs:(NSArray *)thumbs;
+- (void)imagePickerViewController:(SYImagePickerViewController *)imagePickerViewController didExceedMaximumSelection:(NSUInteger)maximumSelection;
+- (void)imagePickerViewController:(SYImagePickerViewController *)imagePickerViewController didFailToLoadAssetsGroupsWithError:(NSError *)error;
+- (void)imagePickerViewController:(SYImagePickerViewController *)imagePickerViewController didFailToLoadAssetsWithError:(NSError *)error;
 - (void)imagePickerViewControllerDidCancel:(SYImagePickerViewController *)imagePickerViewController;
 
 @end

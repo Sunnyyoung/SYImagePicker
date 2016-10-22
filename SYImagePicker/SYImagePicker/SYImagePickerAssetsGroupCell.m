@@ -13,7 +13,7 @@
 - (instancetype)init {
     self = [super initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:AssetsGroupCell];
     if (self) {
-        [self setAccessoryType:UITableViewCellAccessoryDisclosureIndicator];
+        self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     }
     return self;
 }
@@ -21,15 +21,15 @@
 #pragma mark - Property method
 
 - (void)setAssetsGroup:(ALAssetsGroup *)assetsGroup {
-    __weak UITableViewCell *blockSelf = self;
+    __weak typeof(self) weakSelf = self;
     [assetsGroup enumerateAssetsAtIndexes:[NSIndexSet indexSetWithIndex:assetsGroup.numberOfAssets - 1] options:NSEnumerationConcurrent usingBlock:^(ALAsset *result, NSUInteger index, BOOL *stop) {
         if (result) {
             *stop = YES;
-            blockSelf.imageView.image = [UIImage imageWithCGImage:result.thumbnail];
+            weakSelf.imageView.image = [UIImage imageWithCGImage:result.thumbnail];
         }
     }];
-    [self.textLabel setText:[assetsGroup valueForProperty:ALAssetsGroupPropertyName]];
-    [self.detailTextLabel setText:@(assetsGroup.numberOfAssets).stringValue];
+    self.textLabel.text = [assetsGroup valueForProperty:ALAssetsGroupPropertyName];
+    self.detailTextLabel.text = @(assetsGroup.numberOfAssets).stringValue;
 }
 
 @end
